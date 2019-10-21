@@ -1,0 +1,189 @@
+<!-- 判断用户状态，拦截请求 -->
+<script src="/login/status"></script>
+<script>
+    if (!isLogin) {
+        location.href = 'login.html'
+    }
+</script>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <title>Add new post &laquo; Admin</title>
+    <link rel="stylesheet" href="../assets/vendors/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="../assets/vendors/font-awesome/css/font-awesome.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+
+<body>
+
+    <div class="main">
+        <nav class="navbar">
+            <button class="btn btn-default navbar-btn fa fa-bars"></button>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="password-reset.html"><i class="fa fa-user"></i>修改密码</a></li>
+                <li><a href="javascript:;" id="logout"><i class="fa fa-sign-out"></i>退出</a></li>
+            </ul>
+        </nav>
+        <div class="container-fluid" id='editBox'>
+            <div class="page-title">
+                <h1>修改文章</h1>
+            </div>
+            <!-- 有错误信息时展示 -->
+            <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+
+        </div>
+    </div>
+    <div class="aside">
+        <div class="profile">
+            <img class="avatar" src="../uploads/avatar.jpg">
+            <h3 class="name">Coder</h3>
+        </div>
+        <ul class="nav">
+            <li>
+                <a href="index.html"><i class="fa fa-dashboard"></i>仪表盘</a>
+            </li>
+            <li>
+                <a href="#menu-posts" class="collapsed" data-toggle="collapse">
+                    <i class="fa fa-thumb-tack"></i>文章<i class="fa fa-angle-right"></i>
+                </a>
+                <ul id="menu-posts" class="collapse">
+                    <li><a href="posts.html">所有文章</a></li>
+                    <li><a href="post-add.html">写文章</a></li>
+                    <li><a href="categories.html">分类目录</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="comments.html"><i class="fa fa-comments"></i>评论</a>
+            </li>
+            <li class="active">
+                <a href="users.html"><i class="fa fa-users"></i>用户</a>
+            </li>
+            <li>
+                <a href="#menu-settings" class="collapsed" data-toggle="collapse">
+                    <i class="fa fa-cogs"></i>设置<i class="fa fa-angle-right"></i>
+                </a>
+                <ul id="menu-settings" class="collapse">
+                    <li><a href="slides.html">图片轮播</a></li>
+                    <li><a href="settings.html">网站设置</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <script src="../assets/vendors/jquery/jquery.js"></script>
+    <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+    <script src="../assets/vendors/art-template/template-web.js"></script>
+    <script src="../assets/js/common.js"></script>
+
+    <script>
+        //获取地址栏中id值 
+        var id = location.search.split('=')[1];
+        console.log(id);
+
+        $.ajax({
+            type: 'get',
+            url: '/posts/' + id,
+            success: function (res) {
+                // 方式一：ajax嵌套ajax
+                // 方式二：jquery  when方法
+                //获取分类的ajax数据：渲染数据确保两个ajax数据都会来  模板引擎只能拼接一个数据，如果有两个数据要拼接，把一个数据挂载在另一个数据上
+                $.ajax({
+                    type: 'get',
+                    url: '/categories',
+                    success: function (res1) {
+                        //   把分类数据作为res的属性
+                        res.cateList = res1;
+                        console.log(res);
+                        
+                    var html = template('Tpl', res);
+                    $('#editBox').append(html);
+                    }
+                })
+                
+
+            }
+        })
+
+//头像上传
+$('#editBox').on('change','#feature',function() {
+    var fd = new FormData();
+    fd.append('avater',this.files[0]);
+    $.ajax({
+        type:'post',
+        url:'/upload',
+        processData:false,
+        contentType:false,
+        data:fd,
+        success:function(res) {
+            $('#thumbnail').val(res[0].avater);
+            $('.thumbnail').attr('src',res[0].avater)
+        }
+    })
+})
+// 表单提交
+$('#editBox').on('submit','#editForm',function() {
+    $.ajax({
+        type:'put',
+        url:`/posts/${id}`,
+        data:$(this).serialize(),
+        success:function() {
+            location.href = 'posts.html'
+        }
+    })
+    return false;
+})
+ </script>
+    <script type="text/html" id="Tpl">
+    <form class="row" id="editForm">
+            <div class="col-md-9">
+              <div class="form-group">
+                <label for="title">标题</label>
+                <input name="title" id="title" class="form-control input-lg" type="text" placeholder="文章标题" value="{{title}}">
+              </div>
+              <div class="form-group">
+                <label for="content">内容</label>
+                <textarea name="content" id="content" class="form-control input-lg" cols="30" rows="10" placeholder="内容" >{{content}}</textarea>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label for="feature">文章封面</label>
+                <!-- show when image chose -->
+                <img class="help-block thumbnail" style="display:{{thumbnail==''?'none':'block'}};" src={{thumbnail}}>
+                <input id="feature" class="form-control" type="file">
+                <input type="hidden" name="thumbnail" id="thumbnail" value="{{thumbnail}}">
+              </div>
+              <div class="form-group">
+                <label for="category">所属分类</label>
+                <select name="category" id="category" class="form-control">
+                    {{each cateList}}
+                    <option value="{{$value._id}}" {{category._id == $value._id?'checked':''}}>{{$value.title}}</option>
+                    {{/each}}
+                  </select>
+              </div>
+              <div class="form-group">
+                <label for="created">发布时间</label>
+                <input name="createAt" id="created" class="form-control" type="date" value="{{createAt.substr(0,10)}}"> 
+                <!-- 事件格式为yyyy-mm-dd -->
+              </div>
+              <div class="form-group">
+                <label for="status">状态</label>
+                <select name="state" id="status" class="form-control" >
+                    <option value="1" {{state ==1?'selected':''}}>已发布</option>
+                    <option value="0" {{state == 0?'selected':''}}>草稿</option> 
+                </select>
+              </div>
+              <div class="form-group">
+                <button class="btn btn-primary" type="submit">保存</button>
+              </div>
+            </div>
+          </form>
+        </script>
+
+</body>
+
+</html>

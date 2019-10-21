@@ -25,8 +25,6 @@ function changePage(pageNum) {
            page:pageNum
         },
         success: function (res) {
-            console.log(res);
-            
             var html = template('postsTpl', res);
             $('#postsBox').html(html)
             var page = template('pageTpl', res);
@@ -63,3 +61,6 @@ $('#filterForm').on('submit',function() {
 })
 // 渲染出来的用事件委托写
 // 直接用行内样式
+
+
+
